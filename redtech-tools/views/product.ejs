@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= product.name %> - RedTech Tools</title>
+    <link rel="stylesheet" href="/stylesheets/style.css" />
+  </head>
+  <body>
+    <h1><%= product.name %></h1>
+    <p><%= product.description %></p>
+    <p>Preço: $<%= product.price %></p>
+    <h2>Avaliações</h2>
+    <% reviews.forEach(review => { %>
+    <p><%= review.comment %></p>
+    <!-- Vulnerável a XSS -->
+    <% }) %>
+    <form action="/products/<%= product.id %>/review" method="post">
+      <textarea name="comment" placeholder="Deixe sua avaliação"></textarea>
+      <button type="submit">Enviar</button>
+    </form>
+  </body>
+</html>
