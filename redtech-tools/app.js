@@ -5,7 +5,8 @@ const indexRouter = require("./routes/index");
 const authRouter = require("./routes/auth");
 const productsRouter = require("./routes/products");
 const ordersRouter = require("./routes/orders");
-const { initDatabase } = require("./db/init");
+const adminRouter = require("./routes/admin");
+const { db, initDatabase } = require("./db/init");
 
 const app = express();
 
@@ -25,6 +26,25 @@ app.use(
   })
 );
 
+// Middleware to check admin access
+app.use("/admin", (req, res, next) => {
+  if (!req.session.userId) {
+    return res.redirect("/auth/login");
+  }
+  db.get(
+    "SELECT isAdmin FROM users WHERE id = ?",
+    [req.session.userId],
+    (err, user) => {
+      if (err || !user || !user.isAdmin) {
+        return res
+          .status(403)
+          .render("error", { message: "Access denied: Admins only" });
+      }
+      next();
+    }
+  );
+});
+
 // Initialize database
 initDatabase()
   .then(() => {
@@ -33,6 +53,7 @@ initDatabase()
     app.use("/auth", authRouter);
     app.use("/products", productsRouter);
     app.use("/orders", ordersRouter);
+    app.use("/admin", adminRouter);
 
     // Error handling
     app.use((req, res) => {
@@ -40,10 +61,10 @@ initDatabase()
     });
   })
   .catch((err) => {
-    console.error("Error initializing the database:", err);
+    console.error("Error initializing database:", err);
     process.exit(1);
   });
 
-console.log("Server is running on port 3000: http://localhost:3000");
+console.log(`Server is running at http://localhost:3000`);
 
 module.exports = app;

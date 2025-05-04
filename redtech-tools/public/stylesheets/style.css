@@ -1,18 +1,15 @@
 body {
-  font-family: Arial, sans-serif;
-  margin: 20px;
+  background-color: #f8f9fa;
 }
-h1 {
-  color: #333;
+.container {
+  max-width: 1200px;
 }
-form {
-  margin: 20px 0;
+.card {
+  transition: transform 0.2s;
 }
-input,
-textarea {
-  margin: 5px 0;
-  padding: 5px;
+.card:hover {
+  transform: scale(1.02);
 }
-button {
-  padding: 5px 10px;
+.navbar-brand {
+  font-weight: bold;
 }

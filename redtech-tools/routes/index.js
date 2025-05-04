@@ -9,6 +9,7 @@ router.get("/", (req, res) => {
       products,
       isLoggedIn: !!req.session.userId,
       username: req.session.username || null,
+      isAdmin: req.session.isAdmin || false,
     });
   });
 });
@@ -24,6 +25,7 @@ router.get("/search", (req, res) => {
         products,
         isLoggedIn: !!req.session.userId,
         username: req.session.username || null,
+        isAdmin: req.session.isAdmin || false,
       });
     }
   );

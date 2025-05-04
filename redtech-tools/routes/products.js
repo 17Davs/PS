@@ -8,12 +8,23 @@ router.get("/:id", (req, res) => {
   // Vulnerável a SQLi (secundário)
   db.get(`SELECT * FROM products WHERE id = ${productId}`, (err, product) => {
     if (err || !product) {
-      res.status(404).render("error", { message: "Product not found" });
+      res
+        .status(404)
+        .render("error", {
+          message: "Product not found",
+          isLoggedIn: !!req.session.userId,
+          isAdmin: req.session.isAdmin || false,
+        });
     } else {
       db.all(
         `SELECT * FROM reviews WHERE productId = ${productId}`,
         (err, reviews) => {
-          res.render("product", { product, reviews });
+          res.render("product", {
+            product,
+            reviews,
+            isLoggedIn: !!req.session.userId,
+            isAdmin: req.session.isAdmin || false,
+          });
         }
       );
     }
@@ -35,7 +46,13 @@ router.post("/:id/review", (req, res) => {
     `INSERT INTO reviews (productId, userId, comment) VALUES (${productId}, ${userId}, '${escapedComment}')`,
     (err) => {
       if (err) {
-        res.status(500).render("error", { message: "Error submitting review" });
+        res
+          .status(500)
+          .render("error", {
+            message: "Error submitting review",
+            isLoggedIn: !!req.session.userId,
+            isAdmin: req.session.isAdmin || false,
+          });
       } else {
         res.redirect(`/products/${productId}`);
       }

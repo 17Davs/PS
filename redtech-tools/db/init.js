@@ -73,19 +73,20 @@ function initDatabase() {
       // Inserir produtos de exemplo
       db.run(
         `INSERT OR IGNORE INTO products (id, name, description, price) VALUES
-        (1, 'Metasploit Pro', 'Ferramenta de pentest avançada para exploração de vulnerabilidades', 299.99),
-        (2, 'WiFi Pineapple', 'Dispositivo para testes de redes Wi-Fi e ataques MitM', 199.99),
-        (3, 'Rubber Ducky', 'USB para injeção de payloads em sistemas', 49.99),
-        (4, 'Burp Suite Professional', 'Software para testes de segurança em aplicações web', 399.00),
-        (5, 'Kali Linux Toolkit', 'Distribuição Linux com ferramentas de segurança pré-instaladas', 0.00)`,
+        (1, 'Metasploit Pro', 'Advanced pentesting tool for vulnerability exploitation', 299.99),
+        (2, 'WiFi Pineapple', 'Device for Wi-Fi network testing and MitM attacks', 199.99),
+        (3, 'Rubber Ducky', 'USB for payload injection into systems', 49.99),
+        (4, 'Burp Suite Professional', 'Software for security testing in web applications', 399.00),
+        (5, 'Kali Linux Toolkit', 'Linux distribution with pre-installed security tools', 0.00),
+        (6, 'Cobalt Strike', 'Platform for attack simulation and Red Team operations', 3500.00)`,
         (err) => {
           if (err) return reject(err);
           resolve(db);
         }
       );
-      // Inserir produtos de exemplo
+      //insert admin user
       db.run(
-        `INSERT OR IGNORE INTO users (username, password, email, isAdmin) VALUES ('admin', 'admin', 'admin@admin.com', 1)`,
+        `INSERT OR IGNORE INTO users (id, username, password, email, isAdmin) VALUES (1, 'admin', 'admin', 'admin@admin.com', 1)`,
         (err) => {
           if (err) return reject(err);
           resolve(db);

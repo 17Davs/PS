@@ -1,0 +1,4 @@
+# Sensitive Configuration File
+API_KEY=12345-ABCDE-SECRET
+DATABASE_URL=sqlite://localhost/redtech.db
+ADMIN_PASSWORD=supersecret
