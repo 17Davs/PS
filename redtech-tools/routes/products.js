@@ -7,12 +7,16 @@ router.get("/:id", (req, res) => {
   const productId = req.params.id;
   // Vulnerável a SQLi (secundário)
   db.get(`SELECT * FROM products WHERE id = ${productId}`, (err, product) => {
-    db.all(
-      `SELECT * FROM reviews WHERE productId = ${productId}`,
-      (err, reviews) => {
-        res.render("product", { product, reviews });
-      }
-    );
+    if (err || !product) {
+      res.status(404).render("error", { message: "Product not found" });
+    } else {
+      db.all(
+        `SELECT * FROM reviews WHERE productId = ${productId}`,
+        (err, reviews) => {
+          res.render("product", { product, reviews });
+        }
+      );
+    }
   });
 });
 
@@ -20,11 +24,23 @@ router.post("/:id/review", (req, res) => {
   const { comment } = req.body;
   const productId = req.params.id;
   const userId = req.session.userId;
+  if (!userId) {
+    res.redirect("/auth/login");
+    return;
+  }
+  // Escapa aspas simples para evitar crash, mantém XSS
+  const escapedComment = comment.replace(/'/g, "''");
   // Vulnerável a XSS
   db.run(
-    `INSERT INTO reviews (productId, userId, comment) VALUES (${productId}, ${userId}, '${comment}')`
+    `INSERT INTO reviews (productId, userId, comment) VALUES (${productId}, ${userId}, '${escapedComment}')`,
+    (err) => {
+      if (err) {
+        res.status(500).render("error", { message: "Error submitting review" });
+      } else {
+        res.redirect(`/products/${productId}`);
+      }
+    }
   );
-  res.redirect(`/products/${productId}`);
 });
 
 module.exports = router;

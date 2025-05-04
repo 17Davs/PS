@@ -5,7 +5,11 @@ const { db } = require("../db/init");
 // Página inicial (catálogo)
 router.get("/", (req, res) => {
   db.all("SELECT * FROM products", (err, products) => {
-    res.render("index", { products });
+    res.render("index", {
+      products,
+      isLoggedIn: !!req.session.userId,
+      username: req.session.username || null,
+    });
   });
 });
 
@@ -16,7 +20,11 @@ router.get("/search", (req, res) => {
   db.all(
     `SELECT * FROM products WHERE name LIKE '%${query}%'`,
     (err, products) => {
-      res.render("index", { products });
+      res.render("index", {
+        products,
+        isLoggedIn: !!req.session.userId,
+        username: req.session.username || null,
+      });
     }
   );
 });

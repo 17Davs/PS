@@ -6,21 +6,28 @@
   </head>
   <body>
     <h1>RedTech Tools</h1>
-    <a href="/auth/login">Login</a> | <a href="/auth/register">Registrar</a>
+    <% if (isLoggedIn) { %>
+    <p>Welcome, <%= username %>! <a href="/auth/logout">Logout</a></p>
+    <% } else { %>
+    <p>
+      <a href="/auth/login">Login</a> | <a href="/auth/register">Register</a>
+    </p>
+    <% } %>
     <form action="/search" method="get">
-      <input type="text" name="query" placeholder="Buscar produtos" />
-      <button type="submit">Buscar</button>
+      <input type="text" name="query" placeholder="Search products" />
+      <button type="submit">Search</button>
     </form>
     <% if (products.length > 0) { %> <% products.forEach(product => { %>
     <h2><a href="/products/<%= product.id %>"><%= product.name %></a></h2>
     <p><%= product.description %></p>
-    <p>Preço: $<%= product.price %></p>
+    <p>Price: $<%= product.price %></p>
+    <% if (isLoggedIn) { %>
     <form action="/orders" method="post">
       <input type="hidden" name="productId" value="<%= product.id %>" />
-      <button type="submit">Adicionar ao Carrinho</button>
+      <button type="submit">Add to Cart</button>
     </form>
-    <% }) %> <% } else { %>
-    <p>Nenhum produto encontrado.</p>
+    <% } %> <% }) %> <% } else { %>
+    <p>No products found.</p>
     <% } %>
   </body>
 </html>

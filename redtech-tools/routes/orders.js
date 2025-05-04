@@ -6,19 +6,36 @@ const { db } = require("../db/init");
 // Pedido (IDOR)
 router.get("/:id", (req, res) => {
   const orderId = req.params.id;
-  // Vulnerável a IDOR
-  db.get(`SELECT * FROM orders WHERE id = ${orderId}`, (err, order) => {
-    res.render("order", { order });
-  });
+  // Vulnerável a IDOR, mas inclui username para demonstrar
+  db.get(
+    `SELECT orders.*, users.username FROM orders JOIN users ON orders.userId = users.id WHERE orders.id = ${orderId}`,
+    (err, order) => {
+      if (err || !order) {
+        res.status(404).render("error", { message: "Order not found" });
+      } else {
+        res.render("order", { order });
+      }
+    }
+  );
 });
 
 router.post("/", (req, res) => {
   const { productId } = req.body;
   const userId = req.session.userId;
+  if (!userId) {
+    res.redirect("/auth/login");
+    return;
+  }
   db.run(
-    `INSERT INTO orders (userId, productId, date) VALUES (${userId}, ${productId}, datetime('now'))`
+    `INSERT INTO orders (userId, productId, date) VALUES (${userId}, ${productId}, datetime('now'))`,
+    (err) => {
+      if (err) {
+        res.status(500).render("error", { message: "Error creating order" });
+      } else {
+        res.redirect("/");
+      }
+    }
   );
-  res.redirect("/");
 });
 
 // Download de recibo (Path Traversal)

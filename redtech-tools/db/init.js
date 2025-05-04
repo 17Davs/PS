@@ -83,6 +83,14 @@ function initDatabase() {
           resolve(db);
         }
       );
+      // Inserir produtos de exemplo
+      db.run(
+        `INSERT OR IGNORE INTO users (username, password, email, isAdmin) VALUES ('admin', 'admin', 'admin@admin.com', 1)`,
+        (err) => {
+          if (err) return reject(err);
+          resolve(db);
+        }
+      );
     });
   });
 }

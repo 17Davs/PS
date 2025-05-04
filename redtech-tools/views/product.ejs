@@ -10,7 +10,7 @@
     <p>Preço: $<%= product.price %></p>
     <h2>Avaliações</h2>
     <% reviews.forEach(review => { %>
-    <p><%= review.comment %></p>
+    <p><%- review.comment %></p>
     <!-- Vulnerável a XSS -->
     <% }) %>
     <form action="/products/<%= product.id %>/review" method="post">

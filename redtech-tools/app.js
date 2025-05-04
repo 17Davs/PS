@@ -9,14 +9,14 @@ const { initDatabase } = require("./db/init");
 
 const app = express();
 
-// Configuração vulnerável (Cryptographic Failures: sem HTTPS)
+// Vulnerable configuration (Cryptographic Failures: no HTTPS)
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, "public")));
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "ejs");
 
-// Sessão vulnerável (chave fraca, sem timeout)
+// Vulnerable session (weak key, no timeout)
 app.use(
   session({
     secret: "insecure-secret",
@@ -25,22 +25,22 @@ app.use(
   })
 );
 
-// Inicializar banco de dados
+// Initialize database
 initDatabase()
   .then(() => {
-    // Rotas
+    // Routes
     app.use("/", indexRouter);
     app.use("/auth", authRouter);
     app.use("/products", productsRouter);
     app.use("/orders", ordersRouter);
 
-    // Tratamento de erro
+    // Error handling
     app.use((req, res) => {
-      res.status(404).render("error", { message: "Página não encontrada" });
+      res.status(404).render("error", { message: "Page not found" });
     });
   })
   .catch((err) => {
-    console.error("Erro ao inicializar o banco de dados:", err);
+    console.error("Error initializing the database:", err);
     process.exit(1);
   });
 
