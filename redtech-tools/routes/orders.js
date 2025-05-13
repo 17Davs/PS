@@ -4,56 +4,56 @@ const path = require("path");
 const fs = require("fs");
 const { db } = require("../db/init");
 
-// My orders page
-router.get("/", (req, res) => {
-  const userId = req.session.userId;
-  if (!userId) {
-    res.redirect("/auth/login");
+// List receipts directory contents in case admin wants to see them
+router.get("/receipt", (req, res) => {
+  const basePath = path.join(__dirname, "../receipts");
+  if (fs.existsSync(basePath) && fs.lstatSync(basePath).isDirectory()) {
+    const files = fs.readdirSync(basePath);
+    res.send(`Directory contents: ${files.join(", ")}`);
+  } else {
+    res.status(404).send("Receipts directory not found");
+  }
+});
+
+// Download de recibo (Path Traversal)
+router.get("/receipt/:filename", (req, res) => {
+  const filename = req.params.filename || ""; // Default to empty string if no filename
+  const basePath = path.join(__dirname, "../receipts");
+  let filePath = path.resolve(basePath, filename); // Use path.resolve for proper traversal
+
+  // Handle root directory listing (/orders/receipt/) not sure if needed
+  if (filename === "" || filename === "/") {
+    res.redirect("/orders/receipt");
     return;
   }
-  db.all(
-    `SELECT orders.id AS orderId, orders.date, products.name, products.price 
-          FROM orders 
-          JOIN products ON orders.productId = products.id 
-          WHERE orders.userId = ?`,
-    [userId],
-    (err, orders) => {
-      if (err) {
-        res.status(500).render("error", {
-          message: "Error fetching orders",
-          isLoggedIn: !!req.session.userId,
-          isAdmin: req.session.isAdmin || false,
-        });
-      } else {
-        res.render("my-orders", {
-          orders,
-          isLoggedIn: !!req.session.userId,
-          username: req.session.username || null,
-          isAdmin: req.session.isAdmin || false,
-        });
-      }
+
+  // Vulnerável a Path Traversal
+  if (fs.existsSync(filePath)) {
+    if (fs.lstatSync(filePath).isDirectory()) {
+      // Listar conteúdos do diretório
+      const files = fs.readdirSync(filePath);
+      res.send(`Directory contents: ${files.join(", ")}`);
+    } else {
+      console.log("User downloading file:", filePath);
+      res.sendFile(filePath);
     }
-  );
+  } else {
+    // Redirect to /orders/receipt if file doesn't exist
+    console.log("File not found:", filePath);
+    res.redirect("/orders/receipt");
+  }
 });
 
 // Pedido (IDOR)
 router.get("/:id", (req, res) => {
   const orderId = req.params.id;
-  const userId = req.session.userId;
-
-  if (!userId) {
-    res.redirect("/auth/login");
-    return;
-  }
-
-  // Updated query to include product information
+  // Vulnerável a IDOR, mas inclui username, product name, and price para demonstrar
   db.get(
-    `SELECT orders.*, products.name AS productName, products.price AS productPrice, users.username 
+    `SELECT orders.*, users.username, products.name AS productName, products.price AS productPrice 
      FROM orders 
-     JOIN products ON orders.productId = products.id 
      JOIN users ON orders.userId = users.id 
-     WHERE orders.id = ? AND orders.userId = ?`,
-    [orderId, userId],
+     JOIN products ON orders.productId = products.id 
+     WHERE orders.id = ${orderId}`,
     (err, order) => {
       if (err || !order) {
         res.status(404).render("error", {
@@ -145,42 +145,36 @@ Thank you for your purchase!
   );
 });
 
-// List receipts directory contents
-router.get("/receipt", (req, res) => {
-  const basePath = path.join(__dirname, "../receipts");
-  if (fs.existsSync(basePath) && fs.lstatSync(basePath).isDirectory()) {
-    const files = fs.readdirSync(basePath);
-    res.send(`Directory contents: ${files.join(", ")}`);
-  } else {
-    res.status(404).send("Receipts directory not found");
-  }
-});
-
-// Download de recibo (Path Traversal)
-router.get("/receipt/:filename", (req, res) => {
-  const filename = req.params.filename || ""; // Default to empty string if no filename
-  const basePath = path.join(__dirname, "../receipts");
-  let filePath = path.join(basePath, filename);
-
-  // Handle root directory listing (/orders/receipt/)
-  if (filename === "" || filename === "/") {
-    res.redirect("/orders/receipt");
+// My orders page
+router.get("/", (req, res) => {
+  const userId = req.session.userId;
+  if (!userId) {
+    res.redirect("/auth/login");
     return;
   }
-
-  // Vulnerável a Path Traversal
-  if (fs.existsSync(filePath)) {
-    if (fs.lstatSync(filePath).isDirectory()) {
-      // Listar conteúdos do diretório
-      const files = fs.readdirSync(filePath);
-      res.send(`Directory contents: ${files.join(", ")}`);
-    } else {
-      res.sendFile(filePath);
+  db.all(
+    `SELECT orders.id AS orderId, orders.date, products.name, products.price 
+          FROM orders 
+          JOIN products ON orders.productId = products.id 
+          WHERE orders.userId = ?`,
+    [userId],
+    (err, orders) => {
+      if (err) {
+        res.status(500).render("error", {
+          message: "Error fetching orders",
+          isLoggedIn: !!req.session.userId,
+          isAdmin: req.session.isAdmin || false,
+        });
+      } else {
+        res.render("my-orders", {
+          orders,
+          isLoggedIn: !!req.session.userId,
+          username: req.session.username || null,
+          isAdmin: req.session.isAdmin || false,
+        });
+      }
     }
-  } else {
-    // Redirect to /orders/receipt if file doesn't exist
-    res.redirect("/orders/receipt");
-  }
+  );
 });
 
 module.exports = router;
