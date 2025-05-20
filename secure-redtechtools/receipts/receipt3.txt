@@ -1,0 +1,11 @@
+
+RedTech Tools Receipt
+--------------------
+Order ID: 3
+User: admin
+Product ID: 3
+Product Name: Rubber Ducky
+Price: $49.99
+Timestamp: 2025-05-04T23:34:22.122Z
+--------------------
+Thank you for your purchase!
