@@ -9,6 +9,8 @@ const ordersRouter = require("./routes/orders");
 const adminRouter = require("./routes/admin");
 const { db, initDatabase } = require("./db/init");
 
+require("dotenv").config();
+
 const app = express();
 
 // Middleware setup

@@ -32,8 +32,9 @@
       <p>Price: $<%= product.price %></p>
       <h2>Reviews</h2>
       <% reviews.forEach(review => { %>
-      <p><%- review.comment %></p>
-      <!-- Vulnerable to XSS -->
+      <!-- FIXED (XSS render) -->
+      <p><%= review.comment %></p>
+
       <% }) %> <% if (isLoggedIn) { %>
       <form action="/products/<%= product.id %>/review" method="post">
         <div class="mb-3">
