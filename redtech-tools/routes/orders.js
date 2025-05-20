@@ -4,7 +4,7 @@ const path = require("path");
 const fs = require("fs");
 const { db } = require("../db/init");
 
-// List receipts directory contents in case admin wants to see them
+// List receipts directory contents (for admin or user reference)
 router.get("/receipt", (req, res) => {
   const basePath = path.join(__dirname, "../receipts");
   if (fs.existsSync(basePath) && fs.lstatSync(basePath).isDirectory()) {
@@ -15,22 +15,22 @@ router.get("/receipt", (req, res) => {
   }
 });
 
-// Download de recibo (Path Traversal)
+// Download receipt (vulnerable to Path Traversal)
 router.get("/receipt/:filename", (req, res) => {
   const filename = req.params.filename || ""; // Default to empty string if no filename
   const basePath = path.join(__dirname, "../receipts");
   let filePath = path.resolve(basePath, filename); // Use path.resolve for proper traversal
 
-  // Handle root directory listing (/orders/receipt/) not sure if needed
+  // Handle root directory listing (/orders/receipt/)
   if (filename === "" || filename === "/") {
     res.redirect("/orders/receipt");
     return;
   }
 
-  // Vulnerável a Path Traversal
+  // Vulnerable to Path Traversal: allows access to files outside receipts/
   if (fs.existsSync(filePath)) {
     if (fs.lstatSync(filePath).isDirectory()) {
-      // Listar conteúdos do diretório
+      // List directory contents
       const files = fs.readdirSync(filePath);
       res.send(`Directory contents: ${files.join(", ")}`);
     } else {
@@ -44,10 +44,10 @@ router.get("/receipt/:filename", (req, res) => {
   }
 });
 
-// Pedido (IDOR)
+// Order details (vulnerable to IDOR)
 router.get("/:id", (req, res) => {
   const orderId = req.params.id;
-  // Vulnerável a IDOR, mas inclui username, product name, and price para demonstrar
+  // Vulnerable to IDOR: no check if user owns the order
   db.get(
     `SELECT orders.*, users.username, products.name AS productName, products.price AS productPrice 
      FROM orders 
@@ -58,24 +58,25 @@ router.get("/:id", (req, res) => {
       if (err || !order) {
         res.status(404).render("error", {
           message: "Order not found",
-          isLoggedIn: !!req.session.userId,
-          isAdmin: req.session.isAdmin || false,
+          isLoggedIn: !!req.user,
+          isAdmin: req.user?.isAdmin || false,
         });
       } else {
         res.render("order", {
           order,
-          isLoggedIn: !!req.session.userId,
-          username: req.session.username || null,
-          isAdmin: req.session.isAdmin || false,
+          isLoggedIn: !!req.user,
+          username: req.user?.username || null,
+          isAdmin: req.user?.isAdmin || false,
         });
       }
     }
   );
 });
 
+// Create a new order
 router.post("/", (req, res) => {
   const { productId } = req.body;
-  const userId = req.session.userId;
+  const userId = req.user?.userId;
   if (!userId) {
     res.redirect("/auth/login");
     return;
@@ -86,8 +87,8 @@ router.post("/", (req, res) => {
       if (err) {
         res.status(500).render("error", {
           message: "Error creating order",
-          isLoggedIn: !!req.session.userId,
-          isAdmin: req.session.isAdmin || false,
+          isLoggedIn: !!req.user,
+          isAdmin: req.user?.isAdmin || false,
         });
       } else {
         const orderId = this.lastID;
@@ -99,8 +100,8 @@ router.post("/", (req, res) => {
             if (err) {
               res.status(500).render("error", {
                 message: "Error fetching user",
-                isLoggedIn: !!req.session.userId,
-                isAdmin: req.session.isAdmin || false,
+                isLoggedIn: !!req.user,
+                isAdmin: req.user?.isAdmin || false,
               });
               return;
             }
@@ -111,8 +112,8 @@ router.post("/", (req, res) => {
                 if (err) {
                   res.status(500).render("error", {
                     message: "Error fetching product",
-                    isLoggedIn: !!req.session.userId,
-                    isAdmin: req.session.isAdmin || false,
+                    isLoggedIn: !!req.user,
+                    isAdmin: req.user?.isAdmin || false,
                   });
                   return;
                 }
@@ -147,7 +148,7 @@ Thank you for your purchase!
 
 // My orders page
 router.get("/", (req, res) => {
-  const userId = req.session.userId;
+  const userId = req.user?.userId;
   if (!userId) {
     res.redirect("/auth/login");
     return;
@@ -162,15 +163,15 @@ router.get("/", (req, res) => {
       if (err) {
         res.status(500).render("error", {
           message: "Error fetching orders",
-          isLoggedIn: !!req.session.userId,
-          isAdmin: req.session.isAdmin || false,
+          isLoggedIn: !!req.user,
+          isAdmin: req.user?.isAdmin || false,
         });
       } else {
         res.render("my-orders", {
           orders,
-          isLoggedIn: !!req.session.userId,
-          username: req.session.username || null,
-          isAdmin: req.session.isAdmin || false,
+          isLoggedIn: !!req.user,
+          username: req.user?.username || null,
+          isAdmin: req.user?.isAdmin || false,
         });
       }
     }

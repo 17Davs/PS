@@ -1,6 +1,7 @@
 const express = require("express");
 const path = require("path");
-const session = require("express-session");
+const cookieParser = require("cookie-parser"); // Add cookie-parser
+const jwt = require("jsonwebtoken");
 const indexRouter = require("./routes/index");
 const authRouter = require("./routes/auth");
 const productsRouter = require("./routes/products");
@@ -10,39 +11,44 @@ const { db, initDatabase } = require("./db/init");
 
 const app = express();
 
-// Vulnerable configuration (Cryptographic Failures: no HTTPS)
+// Middleware setup
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, "public")));
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "ejs");
 
-// Vulnerable session (weak key, no timeout)
-app.use(
-  session({
-    secret: "insecure-secret",
-    resave: false,
-    saveUninitialized: true,
-  })
-);
+// Add cookie-parser middleware to parse cookies
+app.use(cookieParser());
+
+// Middleware to verify JWT
+app.use((req, res, next) => {
+  const token =
+    req.headers["authorization"]?.split(" ")[1] || req.cookies.token;
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, "insecure-secret");
+      req.user = decoded; // { userId, username, isAdmin }
+    } catch (err) {
+      req.user = null;
+    }
+  } else {
+    req.user = null;
+  }
+  next();
+});
 
 // Middleware to check admin access
 app.use("/admin", (req, res, next) => {
-  if (!req.session.userId) {
+  if (!req.user) {
     return res.redirect("/auth/login");
   }
-  db.get(
-    "SELECT isAdmin FROM users WHERE id = ?",
-    [req.session.userId],
-    (err, user) => {
-      if (err || !user || !user.isAdmin) {
-        return res
-          .status(403)
-          .render("error", { message: "Access denied: Admins only" });
-      }
-      next();
-    }
-  );
+  if (!req.user.isAdmin) {
+    return res
+      .status(403)
+      .render("error", { message: "Access denied: Admins only" });
+  }
+  next();
 });
 
 // Initialize database

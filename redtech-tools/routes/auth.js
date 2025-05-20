@@ -1,21 +1,31 @@
 const express = require("express");
 const router = express.Router();
+const jwt = require("jsonwebtoken");
 const { db } = require("../db/init");
 
-// Register (Cryptographic Failures)
+// Login page
+router.get("/login", (req, res) => {
+  res.render("login", { message: null, isLoggedIn: !!req.user });
+});
+
+// Register page
+router.get("/register", (req, res) => {
+  res.render("register", { isLoggedIn: !!req.user });
+});
+
+// Register user (vulnerable to Cryptographic Failures: plaintext password storage)
 router.post("/register", (req, res) => {
   const { username, password, email } = req.body;
-  // Senha em texto plano
   db.run(
     `INSERT INTO users (username, password, email, isAdmin) VALUES ('${username}', '${password}', '${email}', 0)`
   );
   res.redirect("/auth/login");
 });
 
-// Login (SQLi e Username Enumeration)
+// Login (vulnerable to SQL Injection and Username Enumeration)
 router.post("/login", (req, res) => {
   const { username, password } = req.body;
-  // Vulnerável a SQLi (inclui password na query para facilitar bypass)
+  // Vulnerable to SQLi: unsanitized input in query
   db.get(
     `SELECT * FROM users WHERE username = '${username}' AND password = '${password}'`,
     (err, user) => {
@@ -25,7 +35,7 @@ router.post("/login", (req, res) => {
           isLoggedIn: false,
         });
       } else if (!user) {
-        // Username Enumeration
+        // Username Enumeration: different messages for non-existent user vs wrong password
         db.get(
           `SELECT * FROM users WHERE username = '${username}'`,
           (err, exists) => {
@@ -43,28 +53,33 @@ router.post("/login", (req, res) => {
           }
         );
       } else {
-        req.session.userId = user.id;
-        req.session.username = user.username;
-        req.session.isAdmin = user.isAdmin; // Set isAdmin in session
+        // Generate JWT without httpOnly (vulnerable to XSS)
+        const token = jwt.sign(
+          { userId: user.id, username: user.username, isAdmin: user.isAdmin },
+          "insecure-secret",
+          { expiresIn: "1h" }
+        );
+        res.cookie("token", token); // No httpOnly, allows token theft via XSS
         res.redirect("/");
       }
     }
   );
 });
 
-// Forgot Password (SQLi)
+// Forgot password page
 router.get("/forgot-password", (req, res) => {
   res.render("forgot-password", {
     message: null,
     users: null,
-    isLoggedIn: !!req.session.userId,
-    isAdmin: req.session.isAdmin || false,
+    isLoggedIn: !!req.user,
+    isAdmin: req.user?.isAdmin || false,
   });
 });
 
+// Forgot password (vulnerable to SQL Injection)
 router.post("/forgot-password", (req, res) => {
   const { email } = req.body;
-  // Vulnerável a SQLi
+  // Vulnerable to SQLi: unsanitized input in query
   db.all(
     `SELECT username, email FROM users WHERE email = '${email}'`,
     (err, users) => {
@@ -72,41 +87,32 @@ router.post("/forgot-password", (req, res) => {
         res.render("forgot-password", {
           message: "Error retrieving user",
           users: null,
-          isLoggedIn: !!req.session.userId,
-          isAdmin: req.session.isAdmin || false,
+          isLoggedIn: !!req.user,
+          isAdmin: req.user?.isAdmin || false,
         });
       } else if (users.length === 0) {
         res.render("forgot-password", {
           message: "No user found with that email",
           users: null,
-          isLoggedIn: !!req.session.userId,
-          isAdmin: req.session.isAdmin || false,
+          isLoggedIn: !!req.user,
+          isAdmin: req.user?.isAdmin || false,
         });
       } else {
         res.render("forgot-password", {
           message: "User(s) found",
           users,
-          isLoggedIn: !!req.session.userId,
-          isAdmin: req.session.isAdmin || false,
+          isLoggedIn: !!req.user,
+          isAdmin: req.user?.isAdmin || false,
         });
       }
     }
   );
 });
 
-// Logout
+// Logout (clear JWT cookie)
 router.get("/logout", (req, res) => {
-  req.session.destroy();
+  res.clearCookie("token");
   res.redirect("/");
-});
-
-// Páginas de login e registro
-router.get("/login", (req, res) => {
-  res.render("login", { message: null, isLoggedIn: false });
-});
-
-router.get("/register", (req, res) => {
-  res.render("register", { isLoggedIn: false });
 });
 
 module.exports = router;
