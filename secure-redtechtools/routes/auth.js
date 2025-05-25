@@ -177,7 +177,7 @@ router.post("/forgot-password", (req, res) => {
 
   // Server-side input validation
   if (!email || !validator.isEmail(email)) {
-    return res.render("forgot-password", {
+    return res.status(400).render("forgot-password", {
       message: "Please provide a valid email",
       users: null,
       isLoggedIn: !!req.user,
@@ -190,27 +190,9 @@ router.post("/forgot-password", (req, res) => {
     "SELECT username, email FROM users WHERE email = ? LIMIT 1",
     [email],
     (err, user) => {
-      if (err) {
-        return res.render("forgot-password", {
-          message: "Error retrieving user",
-          users: null,
-          isLoggedIn: !!req.user,
-          isAdmin: req.user?.isAdmin || false,
-        });
-      }
-      if (!user) {
-        return res.render("forgot-password", {
-          message: "No user found with that email",
-          users: null,
-          isLoggedIn: !!req.user,
-          isAdmin: req.user?.isAdmin || false,
-        });
-      }
-
-      // Return single user and prevent enumeration
-      res.render("forgot-password", {
-        message: "Email sent to user (if exists), check inbox",
-        user, // Single user object
+      // Generic response to prevent enumeration
+      return res.render("forgot-password", {
+        message: `Email sent to ${email} (if exists), check inbox`,
         isLoggedIn: !!req.user,
         isAdmin: req.user?.isAdmin || false,
       });

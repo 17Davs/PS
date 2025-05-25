@@ -31,13 +31,19 @@
       <p><strong>Username:</strong> <%= order.username %></p>
       <p><strong>Product Name:</strong> <%= order.productName %></p>
       <p><strong>Product ID:</strong> <%= order.productId %></p>
-      <p><strong>Product Price:</strong> $<%= order.productPrice %></p>
+      <p>
+        <strong>Product Price:</strong> $<%= order.productPrice.toFixed(2) %>
+      </p>
       <p><strong>Date:</strong> <%= order.date %></p>
+      <% if (order.receiptFilename) { %>
       <a
-        href="/orders/receipt/receipt<%= order.id %>.txt"
+        href="/orders/receipt/<%= order.receiptFilename %>"
         class="btn btn-primary"
         >Download Receipt</a
       >
+      <% } else { %>
+      <p>No receipt available for this order.</p>
+      <% } %>
     </div>
   </body>
 </html>

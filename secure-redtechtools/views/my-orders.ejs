@@ -17,7 +17,7 @@
           <% if (isLoggedIn) { %> <% if (isAdmin) { %>
           <a class="nav-link" href="/admin">Admin</a>
           <% } %>
-          <a class="nav-link active" href="/orders/">Orders</a>
+          <a class="nav-link active" href="/orders">Orders</a>
           <a class="nav-link" href="/auth/logout">Logout</a>
           <% } else { %>
           <a class="nav-link" href="/auth/login">Login</a>
@@ -28,7 +28,7 @@
     </nav>
     <div class="container mt-4">
       <h1>My Orders</h1>
-      <% if (isLoggedIn) { %> <% if (orders.length > 0) { %>
+      <% if (isLoggedIn) { %> <% if (orders && orders.length > 0) { %>
       <table class="table table-striped">
         <thead>
           <tr>
@@ -37,6 +37,7 @@
             <th>Price</th>
             <th>Date</th>
             <th>Action</th>
+            <th>Receipt</th>
           </tr>
         </thead>
         <tbody>
@@ -44,14 +45,25 @@
           <tr>
             <td><%= order.orderId %></td>
             <td><%= order.name %></td>
-            <td>$<%= order.price %></td>
+            <td>$<%= order.price.toFixed(2) %></td>
             <td><%= order.date %></td>
             <td>
               <a
                 href="/orders/<%= order.orderId %>"
                 class="btn btn-primary btn-sm"
-                >view</a
+                >View</a
               >
+            </td>
+            <td>
+              <% if (order.receiptFilename) { %>
+              <a
+                href="/orders/receipt/<%= order.receiptFilename %>"
+                class="btn btn-secondary btn-sm"
+                >Download Receipt</a
+              >
+              <% } else { %>
+              <span>No Receipt</span>
+              <% } %>
             </td>
           </tr>
           <% }) %>

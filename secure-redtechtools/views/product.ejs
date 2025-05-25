@@ -33,7 +33,7 @@
       <h2>Reviews</h2>
       <% reviews.forEach(review => { %>
       <!-- FIXED (XSS render) -->
-      <p><%= review.comment %></p>
+      <p>User Commented: <%= review.comment %></p>
 
       <% }) %> <% if (isLoggedIn) { %>
       <form action="/products/<%= product.id %>/review" method="post">

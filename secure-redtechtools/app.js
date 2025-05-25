@@ -1,12 +1,16 @@
 const express = require("express");
 const path = require("path");
-const cookieParser = require("cookie-parser"); // Add cookie-parser
+const cookieParser = require("cookie-parser");
 const jwt = require("jsonwebtoken");
-const indexRouter = require("./routes/index");
-const authRouter = require("./routes/auth");
-const productsRouter = require("./routes/products");
-const ordersRouter = require("./routes/orders");
-const adminRouter = require("./routes/admin");
+const indexRouter = require("./routes/index"); // Direct import
+const {
+  router: authRouter,
+  requireAuth,
+  requireAdmin,
+} = require("./routes/auth");
+const productsRouter = require("./routes/products"); // Direct import
+const ordersRouter = require("./routes/orders"); // Direct import
+const adminRouter = require("./routes/admin"); // Direct import
 const { db, initDatabase } = require("./db/init");
 
 require("dotenv").config();
@@ -23,34 +27,55 @@ app.set("view engine", "ejs");
 // Add cookie-parser middleware to parse cookies
 app.use(cookieParser());
 
-// Middleware to verify JWT
+// Middleware to verify JWT and re-validate user
 app.use((req, res, next) => {
   const token =
     req.headers["authorization"]?.split(" ")[1] || req.cookies.token;
   if (token) {
     try {
-      const decoded = jwt.verify(token, "insecure-secret");
-      req.user = decoded; // { userId, username, isAdmin }
+      // [FIXED] - Use secure JWT secret from environment variable
+      const decoded = jwt.verify(
+        token,
+        process.env.JWT_SECRET || "secure-long-random-secret-1234567890"
+      );
+
+      // [FIXED] - Re-validate user against database to ensure token is still valid
+      db.get(
+        "SELECT id, username, isAdmin FROM users WHERE id = ?",
+        [decoded.userId],
+        (err, user) => {
+          if (err || !user) {
+            req.user = null; // User not found or deleted
+            res.clearCookie("token"); // Invalidate token
+            return next();
+          }
+          // Ensure token data matches current user data
+          if (
+            user.id === decoded.userId &&
+            user.username === decoded.username &&
+            user.isAdmin === decoded.isAdmin
+          ) {
+            req.user = {
+              userId: user.id,
+              username: user.username,
+              isAdmin: user.isAdmin,
+            };
+          } else {
+            req.user = null; // Token data outdated
+            res.clearCookie("token");
+          }
+          next();
+        }
+      );
     } catch (err) {
       req.user = null;
+      res.clearCookie("token");
+      next();
     }
   } else {
     req.user = null;
+    next();
   }
-  next();
-});
-
-// Middleware to check admin access
-app.use("/admin", (req, res, next) => {
-  if (!req.user) {
-    return res.redirect("/auth/login");
-  }
-  if (!req.user.isAdmin) {
-    return res
-      .status(403)
-      .render("error", { message: "Access denied: Admins only" });
-  }
-  next();
 });
 
 // Initialize database
@@ -65,7 +90,12 @@ initDatabase()
 
     // Error handling
     app.use((req, res) => {
-      res.status(404).render("error", { message: "Page not found" });
+      // [FIXED] - Added isLoggedIn and isAdmin for consistent UI rendering
+      res.status(404).render("error", {
+        message: "Page not found",
+        isLoggedIn: !!req.user,
+        isAdmin: req.user?.isAdmin || false,
+      });
     });
   })
   .catch((err) => {
