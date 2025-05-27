@@ -28,14 +28,23 @@
     </nav>
     <div class="container mt-4">
       <h1><%= product.name %></h1>
-      <p><%= product.description %></p>
-      <p>Price: $<%= product.price %></p>
-      <h2>Reviews</h2>
-      <% reviews.forEach(review => { %>
-      <!-- FIXED (XSS render) -->
-      <p>User Commented: <%= review.comment %></p>
-
-      <% }) %> <% if (isLoggedIn) { %>
+      <p><strong>Description:</strong> <%= product.description %></p>
+      <p><strong>Price:</strong> $<%= product.price.toFixed(2) %></p>
+      <% if (isLoggedIn) { %>
+      <form action="/orders" method="post">
+        <input type="hidden" name="productId" value="<%= product.id %>" />
+        <button type="submit" class="btn btn-success">Buy</button>
+      </form>
+      <% } else { %>
+      <p>Please <a href="/auth/login">log in</a> to place an order.</p>
+      <% } %>
+      <h3>Reviews</h3>
+      <% if (reviews && reviews.length > 0) { %> <% reviews.forEach(review => {
+      %>
+      <p>User <%= review.userId %> Commented: <%= review.comment %></p>
+      <% }); %> <% } else { %>
+      <p>No reviews yet.</p>
+      <% } %> <% if (isLoggedIn) { %>
       <form action="/products/<%= product.id %>/review" method="post">
         <div class="mb-3">
           <label for="comment" class="form-label">Leave your review</label>
@@ -43,7 +52,6 @@
             class="form-control"
             id="comment"
             name="comment"
-            placeholder="Write your review here"
             rows="3"
           ></textarea>
         </div>

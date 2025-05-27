@@ -1,6 +1,7 @@
 const express = require("express");
 const path = require("path");
 const cookieParser = require("cookie-parser");
+const session = require("express-session");
 const jwt = require("jsonwebtoken");
 const indexRouter = require("./routes/index"); // Direct import
 const {
@@ -24,6 +25,18 @@ app.use(express.static(path.join(__dirname, "public")));
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "ejs");
 
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "sd4x7eEtULkm3Dr7Jn8CysxzcFkp4Ls2", // [FIXED] - Use secure session secret from environment variable
+    resave: false,
+    saveUninitialized: true, // [FIXED] - Allow session for unauthenticated users
+    cookie: {
+      secure: process.env.NODE_ENV === "production", // [FIXED] - Secure cookies in production
+      sameSite: "Lax", // [FIXED] - Prevent CSRF by restricting cross-site cookie usage
+    },
+  })
+);
+
 // Add cookie-parser middleware to parse cookies
 app.use(cookieParser());
 
@@ -36,7 +49,8 @@ app.use((req, res, next) => {
       // [FIXED] - Use secure JWT secret from environment variable
       const decoded = jwt.verify(
         token,
-        process.env.JWT_SECRET || "secure-long-random-secret-1234567890"
+        process.env.JWT_SECRET ||
+          "FtA44jd4iEA6ku5NEhW9PqVFoGe4XpRud2Y0QCo7wzeQL"
       );
 
       // [FIXED] - Re-validate user against database to ensure token is still valid
@@ -46,7 +60,7 @@ app.use((req, res, next) => {
         (err, user) => {
           if (err || !user) {
             req.user = null; // User not found or deleted
-            res.clearCookie("token"); // Invalidate token
+            res.clearCookie("token", { sameSite: "Lax" }); // [FIXED] - Clear with SameSite
             return next();
           }
           // Ensure token data matches current user data
@@ -62,14 +76,14 @@ app.use((req, res, next) => {
             };
           } else {
             req.user = null; // Token data outdated
-            res.clearCookie("token");
+            res.clearCookie("token", { sameSite: "Lax" }); // [FIXED] - Clear with SameSite
           }
           next();
         }
       );
     } catch (err) {
       req.user = null;
-      res.clearCookie("token");
+      res.clearCookie("token", { sameSite: "Lax" }); // [FIXED] - Clear with SameSite
       next();
     }
   } else {

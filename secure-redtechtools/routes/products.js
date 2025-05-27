@@ -5,7 +5,7 @@ const { requireAuth, requireAdmin } = require("./auth");
 const sanitizeHtml = require("sanitize-html");
 
 // Product details and reviews (fixed SQL Injection)
-router.get("/:id", requireAuth, (req, res) => {
+router.get("/:id", (req, res) => {
   const productId = req.params.id;
   // [FIXED] - Replaced string concatenation with parameterized query to prevent SQL Injection
   db.get("SELECT * FROM products WHERE id = ?", [productId], (err, product) => {
