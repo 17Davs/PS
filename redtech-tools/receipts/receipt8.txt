@@ -1,0 +1,11 @@
+
+RedTech Tools Receipt
+--------------------
+Order ID: 8
+User: nuno
+Product ID: 6
+Product Name: Cobalt Strike
+Price: $3500
+Timestamp: 2025-05-27T19:01:54.729Z
+--------------------
+Thank you for your purchase!

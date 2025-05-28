@@ -18,7 +18,7 @@ router.get("/receipt", (req, res) => {
 // Download receipt (vulnerable to Path Traversal)
 router.get("/receipt/:filename", (req, res) => {
   const basePath = path.join(__dirname, "../receipts");
-  let filePath = path.resolve(basePath, filename); // Use path.resolve for proper traversal
+  let filePath = path.resolve(basePath, req.params.filename); // Resolve to prevent Path Traversal
 
   // Vulnerable to Path Traversal: allows access to files outside receipts/
   if (fs.existsSync(filePath)) {

@@ -1,0 +1,11 @@
+
+RedTech Tools Receipt
+--------------------
+Order ID: 7
+User: david
+Product ID: 4
+Product Name: Burp Suite Professional
+Price: $399
+Timestamp: 2025-05-27T14:50:08.514Z
+--------------------
+Thank you for your purchase!

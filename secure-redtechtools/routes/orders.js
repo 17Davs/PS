@@ -71,7 +71,7 @@ router.get("/:id", requireAuth, (req, res) => {
   const orderId = req.params.id;
   const userId = req.user.userId;
 
-  // [FIXED] - Added receiptFilename to the query for order details
+  // [FIXED] - Use parameterized query to prevent SQL Injection
   db.get(
     "SELECT orders.*, orders.receiptFilename, users.username, products.name AS productName, products.price AS productPrice " +
       "FROM orders " +
