@@ -1,0 +1,11 @@
+
+RedTech Tools Receipt
+--------------------
+Order ID: 11
+User: teste
+Product ID: 1
+Product Name: Metasploit Pro
+Price: $299.99
+Timestamp: 2025-05-28T20:58:43.836Z
+--------------------
+Thank you for your purchase!
